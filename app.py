@@ -432,7 +432,6 @@ with right:
 
         # Email section
         with st.expander("📧 Send report via Gmail"):
-            st.info("Upload your Google Cloud OAuth2 `credentials.json` to send reports by email.")
             ontvanger = st.text_input("Recipient email", placeholder="name@company.com")
             creds_file = st.file_uploader("Upload credentials.json", type=["json"])
             if st.button("📤 Send report"):

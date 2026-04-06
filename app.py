@@ -241,9 +241,11 @@ if _logo_path.exists():
     # Place logo visually inside header using columns trick
     _spacer, _logo_col = st.columns([10, 2])
     with _logo_col:
-        st.image(str(_logo_path), width=120)
+        st.image(str(_logo_path), width=150, use_container_width=False)
     # Pull it up visually with negative margin
-    st.markdown('<style>[data-testid="stVerticalBlock"] > div:nth-child(2) {margin-top: -90px;}</style>', unsafe_allow_html=True)
+    st.markdown('<style>[data-testid="stVerticalBlock"] > div:nth-child(2) {margin-top: -100px;}</style>', unsafe_allow_html=True)
+
+st.markdown('<hr style="border:none;border-top:1px solid #d0dae8;margin:0 0 18px 0;">', unsafe_allow_html=True)
 
 # ── MAIN LAYOUT: left = input, right = result ──────────────────────────────────
 left, right = st.columns([1.1, 0.9], gap="large")

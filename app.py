@@ -421,39 +421,56 @@ with right:
         breakdown_html += "</div>"
         st.markdown(breakdown_html, unsafe_allow_html=True)
 
-        # New calculation button
-        st.markdown('<div class="btn-reset">', unsafe_allow_html=True)
-        if st.button("↩ New calculation"):
-            st.session_state["resultaat"] = None
-            st.session_state["invoer"] = {}
-            st.session_state["product_en"] = ""
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Buttons row: New calculation + PDF download
+        col_reset, col_pdf = st.columns(2)
 
-        # Email section
+        with col_reset:
+            st.markdown('<div class="btn-reset">', unsafe_allow_html=True)
+            if st.button("↩ New calculation"):
+                st.session_state["resultaat"] = None
+                st.session_state["invoer"] = {}
+                st.session_state["product_en"] = ""
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col_pdf:
+            from pdf_generator import genereer_pdf
+            pdf_bytes = genereer_pdf(
+                st.session_state["product_en"],
+                st.session_state["invoer"],
+                st.session_state["resultaat"],
+            )
+            st.download_button(
+                label="📄 Download PDF",
+                data=pdf_bytes,
+                file_name=f"FAVV_retribution_{st.session_state['product_en'][:20].replace(' ','_')}.pdf",
+                mime="application/pdf",
+            )
+
+        # Gmail section via Streamlit Secrets
         with st.expander("📧 Send report via Gmail"):
             ontvanger = st.text_input("Recipient email", placeholder="name@company.com")
-            creds_file = st.file_uploader("Upload credentials.json", type=["json"])
             if st.button("📤 Send report"):
                 if not ontvanger:
                     st.error("Please enter a recipient email address.")
-                elif not creds_file:
-                    st.error("Please upload your credentials.json file.")
                 else:
-                    from gmail_sender import verstuur_rapport
-                    creds_str = creds_file.read().decode("utf-8")
-                    with st.spinner("Sending report..."):
-                        ok = verstuur_rapport(
-                            ontvanger,
-                            st.session_state["product_en"],
-                            st.session_state["invoer"],
-                            st.session_state["resultaat"],
-                            creds_str,
-                        )
-                    if ok:
-                        st.success(f"✅ Report sent to {ontvanger}")
+                    creds_str = st.secrets.get("GMAIL_CREDENTIALS", None)
+                    if not creds_str:
+                        st.error("⚠️ Gmail credentials not configured in Streamlit Secrets.")
                     else:
-                        st.error("❌ Sending failed. Please check your credentials and try again.")
+                        from gmail_sender import verstuur_rapport
+                        with st.spinner("Sending report..."):
+                            ok = verstuur_rapport(
+                                ontvanger,
+                                st.session_state["product_en"],
+                                st.session_state["invoer"],
+                                st.session_state["resultaat"],
+                                creds_str,
+                            )
+                        if ok:
+                            st.success(f"✅ Report sent to {ontvanger}")
+                        else:
+                            st.error("❌ Sending failed. Please check the Gmail credentials in Secrets.")
 
 # ── FOOTER ─────────────────────────────────────────────────────────────────────
 st.markdown("""

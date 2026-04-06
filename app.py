@@ -6,7 +6,6 @@ Calculates FAVV charges based on Royal Decree tariffs 2026
 import streamlit as st
 import base64
 import os
-import json
 from berekeningen import (
     PRODUCT_TYPES, FLOWS, LOCATIONS,
     bereken_veterinair_vlees_vis,
@@ -20,7 +19,7 @@ from berekeningen import (
     bereken_other_controls,
 )
 
-# English product type labels
+# ── ENGLISH LABELS ─────────────────────────────────────────────────────────────
 PRODUCT_LABELS_EN = {
     "Vlees / Vis (veterinair)": "Meat / Fish (veterinary)",
     "Andere dan vlees/vis - HC + NHC (veterinair)": "Other than Meat/Fish – HC + NHC (veterinary)",
@@ -34,8 +33,6 @@ PRODUCT_LABELS_EN = {
 }
 PRODUCT_TYPES_EN = list(PRODUCT_LABELS_EN.values())
 NL_FROM_EN = {v: k for k, v in PRODUCT_LABELS_EN.items()}
-
-FLOWS_EN = ["Import", "Transit"]
 LOCATIONS_EN = ["Rest of the World", "New Zealand"]
 LOCATIONS_MAP = {"Rest of the World": "Rest of the World", "New Zealand": "Nieuw-Zeeland"}
 
@@ -56,61 +53,78 @@ def get_logo_b64():
     return None
 
 logo_b64 = get_logo_b64()
-logo_html = (f'<img src="data:image/png;base64,{logo_b64}" style="height:38px;filter:brightness(0) invert(1);">'
-             if logo_b64 else '<span style="color:white;font-weight:800;font-size:20px;">DKM</span>')
+logo_html = (
+    f'<img src="data:image/png;base64,{logo_b64}" style="height:34px;filter:brightness(0) invert(1);opacity:0.92;">'
+    if logo_b64 else '<span style="color:white;font-weight:800;font-size:18px;">DKM</span>'
+)
 
 # ── CUSTOM CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
-html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
-.stApp { background: #f0f3f7; }
+html, body, [class*="css"] {
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+.stApp { background: #f4f6f9; }
 
+/* Header */
 .favv-header {
-    background: #1a1a2e;
+    background: #003d7a;
     border-radius: 14px;
-    padding: 24px 32px;
+    padding: 28px 32px;
     margin-bottom: 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 .favv-header-left { display: flex; align-items: center; gap: 20px; }
-.favv-badge {
-    background: #e63946;
-    color: white;
+.favv-logo {
+    background: #fff;
+    color: #003d7a;
     font-weight: 900;
-    font-size: 13px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    font-size: 22px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    letter-spacing: -1px;
 }
-.favv-title { color: white; font-size: 20px; font-weight: 700; margin: 0; }
-.favv-sub { color: #8899bb; font-size: 12px; margin: 2px 0 0 0; }
+.favv-title { color: #fff; font-size: 20px; font-weight: 700; margin: 0; }
+.favv-sub   { color: #7eb8f7; font-size: 13px; margin: 2px 0 0 0; }
 
+/* Result card */
 .result-card {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: #003d7a;
     border-radius: 14px;
     padding: 24px 28px;
     margin: 20px 0;
     text-align: center;
-    border: 1px solid #2a2a4a;
 }
-.result-label { color: #8899bb; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-.result-amount { color: white; font-family: 'IBM Plex Mono', monospace; font-size: 52px; font-weight: 600; letter-spacing: -2px; }
+.result-label {
+    color: #7eb8f7;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+.result-amount {
+    color: white;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 52px;
+    font-weight: 600;
+    letter-spacing: -2px;
+}
 .nz-badge {
     display: inline-block;
-    background: rgba(230,57,70,0.15);
-    color: #e63946;
-    border: 1px solid rgba(230,57,70,0.3);
+    background: #fff3cd;
+    color: #856404;
     padding: 4px 14px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
     margin-top: 10px;
 }
+
+/* Breakdown */
 .breakdown-row {
     display: flex;
     justify-content: space-between;
@@ -120,26 +134,34 @@ html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
 }
 .breakdown-row:last-child { border-bottom: none; }
 .breakdown-label { color: #555; }
-.breakdown-amount { color: #1a1a2e; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.breakdown-amount {
+    color: #222;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Step badge */
 .step-badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #eef1f8;
-    color: #1a1a2e;
+    background: #e8f0fe;
+    color: #003d7a;
     border-radius: 20px;
     padding: 4px 14px;
     font-size: 13px;
     font-weight: 600;
     margin-bottom: 16px;
 }
+
+/* Streamlit overrides */
 .stSelectbox label, .stNumberInput label, .stRadio label {
     font-weight: 600 !important;
-    color: #1a1a2e !important;
+    color: #222 !important;
     font-size: 14px !important;
 }
 .stButton > button {
-    background: #1a1a2e !important;
+    background: #003d7a !important;
     color: white !important;
     border: none !important;
     border-radius: 8px !important;
@@ -149,7 +171,7 @@ html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
     width: 100%;
     transition: opacity 0.2s;
 }
-.stButton > button:hover { opacity: 0.82 !important; }
+.stButton > button:hover { opacity: 0.88 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -157,7 +179,7 @@ html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
 st.markdown(f"""
 <div class="favv-header">
   <div class="favv-header-left">
-    <span class="favv-badge">FAVV</span>
+    <div class="favv-logo">FAVV</div>
     <div>
       <p class="favv-title">Retribution Calculator</p>
       <p class="favv-sub">Royal Decree Tariffs 2026 · Port of Antwerp</p>
@@ -184,19 +206,16 @@ st.markdown('<div class="step-badge">② Details</div>', unsafe_allow_html=True)
 invoer = {}
 resultaat = None
 
-is_veterinair = product_type_nl in [
-    "Vlees / Vis (veterinair)",
-    "Andere dan vlees/vis - HC + NHC (veterinair)",
-]
+is_veterinair    = product_type_nl in ["Vlees / Vis (veterinair)", "Andere dan vlees/vis - HC + NHC (veterinair)"]
 is_verpakkingshout = product_type_nl == "Verpakkingshout"
-is_fyto = product_type_nl.startswith("Plantaardige") and not is_verpakkingshout
-is_other = "Other controls" in product_type_nl
+is_fyto          = product_type_nl.startswith("Plantaardige") and not is_verpakkingshout
+is_other         = "Other controls" in product_type_nl
 
 # ── Veterinary ────────────────────────────────────────────────────────────────
 if is_veterinair:
     col1, col2 = st.columns(2)
     with col1:
-        flow = st.selectbox("Flow", FLOWS_EN)
+        flow = st.selectbox("Flow", ["Import", "Transit"])
         invoer["Flow"] = flow
     with col2:
         locatie_en = st.selectbox("Origin", LOCATIONS_EN)
@@ -207,35 +226,32 @@ if is_veterinair:
         gewicht = st.number_input("Weight (kg)", min_value=0.0, value=15000.0, step=100.0)
         invoer["Weight"] = f"{gewicht:,.0f} kg"
         containers = st.number_input("Number of containers", min_value=1, value=1, step=1)
-        invoer["Containers"] = containers
+        invoer["Containers"] = int(containers)
         if st.button("🧮 Calculate FAVV charge"):
             resultaat = bereken_veterinair_vlees_vis(gewicht, flow, locatie_nl, int(containers))
-
     else:
         col1, col2 = st.columns(2)
         with col1:
             containers = st.number_input("Number of containers", min_value=1, value=1, step=1)
-            invoer["Containers"] = containers
+            invoer["Containers"] = int(containers)
             halfuren = st.number_input("Half-hours of inspection", min_value=0, value=1, step=1,
                                        help="Number of half-hour periods the inspection takes")
-            invoer["Half-hours inspection"] = halfuren
+            invoer["Half-hours inspection"] = int(halfuren)
         with col2:
-            volgende_partij = st.number_input("Next shipment same container", min_value=0,
-                                               value=0, step=1)
-            invoer["Next shipment same container"] = volgende_partij
+            volgende_partij = st.number_input("Next shipment same container", min_value=0, value=0, step=1)
+            invoer["Next shipment same container"] = int(volgende_partij)
         if st.button("🧮 Calculate FAVV charge"):
-            resultaat = bereken_veterinair_other(flow, locatie_nl, int(containers),
-                                                  int(halfuren), int(volgende_partij))
+            resultaat = bereken_veterinair_other(flow, locatie_nl, int(containers), int(halfuren), int(volgende_partij))
 
 # ── Phytosanitary ─────────────────────────────────────────────────────────────
 elif is_fyto:
     col1, col2 = st.columns(2)
     with col1:
         zendingen = st.number_input("Number of shipments (documents)", min_value=1, value=1, step=1)
-        invoer["Shipments"] = zendingen
+        invoer["Shipments"] = int(zendingen)
     with col2:
         containers = st.number_input("Number of containers", min_value=1, value=1, step=1)
-        invoer["Containers"] = containers
+        invoer["Containers"] = int(containers)
 
     if product_type_nl in [
         "Plantaardige producten - Zaden",
@@ -245,7 +261,6 @@ elif is_fyto:
     ]:
         gewicht = st.number_input("Weight (kg)", min_value=0.0, value=15000.0, step=100.0)
         invoer["Weight"] = f"{gewicht:,.0f} kg"
-
     elif product_type_nl == "Plantaardige producten - Hout":
         volume = st.number_input("Volume (m³)", min_value=0.0, value=50.0, step=1.0)
         invoer["Volume"] = f"{volume:,.1f} m³"
@@ -265,7 +280,7 @@ elif is_fyto:
 # ── Packaging Wood ────────────────────────────────────────────────────────────
 elif is_verpakkingshout:
     zendingen = st.number_input("Number of shipments", min_value=1, value=1, step=1)
-    invoer["Shipments"] = zendingen
+    invoer["Shipments"] = int(zendingen)
     if st.button("🧮 Calculate FAVV charge"):
         resultaat = bereken_fyto_verpakkingshout(int(zendingen))
 
@@ -274,13 +289,13 @@ elif is_other:
     col1, col2, col3 = st.columns(3)
     with col1:
         certs = st.number_input("Number of certificates", min_value=1, value=1, step=1)
-        invoer["Certificates"] = certs
+        invoer["Certificates"] = int(certs)
     with col2:
         halfuren_controle = st.number_input("Half-hours inspection", min_value=0, value=1, step=1)
-        invoer["Half-hours inspection"] = halfuren_controle
+        invoer["Half-hours inspection"] = int(halfuren_controle)
     with col3:
         halfuren_monster = st.number_input("Half-hours sampling", min_value=0, value=0, step=1)
-        invoer["Half-hours sampling"] = halfuren_monster
+        invoer["Half-hours sampling"] = int(halfuren_monster)
     if st.button("🧮 Calculate FAVV charge"):
         resultaat = bereken_other_controls(int(certs), int(halfuren_controle), int(halfuren_monster))
 
@@ -318,16 +333,14 @@ if resultaat:
     st.session_state["laatste_invoer"] = invoer
     st.session_state["laatste_product"] = product_type_en
 
-    # ── EMAIL SECTION ──────────────────────────────────────────────────────────
+    # ── EMAIL ──────────────────────────────────────────────────────────────────
     st.markdown("---")
     st.markdown('<div class="step-badge">④ Send report</div>', unsafe_allow_html=True)
 
     with st.expander("📧 Send report via Gmail"):
-        st.info("You need a `credentials.json` file from Google Cloud (OAuth2). "
-                "See the README for setup instructions.")
+        st.info("You need a `credentials.json` file from Google Cloud (OAuth2). See the README for setup instructions.")
         ontvanger = st.text_input("Recipient email address", placeholder="name@company.com")
         creds_file = st.file_uploader("Upload credentials.json", type=["json"])
-
         if st.button("📤 Send report"):
             if not ontvanger:
                 st.error("Please enter a recipient email address.")

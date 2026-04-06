@@ -46,10 +46,14 @@ st.set_page_config(
 
 # ── LOGO HELPER ────────────────────────────────────────────────────────────────
 def get_logo_b64():
-    logo_path = os.path.join(os.path.dirname(__file__), "dkm_logo.png")
-    if os.path.exists(logo_path):
-        with open(logo_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+    for path in [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "dkm_logo.png"),
+        os.path.join(os.getcwd(), "dkm_logo.png"),
+        "dkm_logo.png",
+    ]:
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
     return None
 
 logo_b64 = get_logo_b64()
@@ -217,6 +221,19 @@ html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
 
 /* Remove extra padding Streamlit adds */
 .block-container { padding-top: 1.5rem !important; padding-bottom: 1rem !important; }
+
+/* Make the top Streamlit toolbar match our blue */
+header[data-testid="stHeader"] {
+    background: #003d7a !important;
+}
+header[data-testid="stHeader"] * {
+    color: white !important;
+    stroke: white !important;
+}
+/* Top toolbar buttons/icons */
+.stToolbar { background: #003d7a !important; }
+[data-testid="stToolbar"] { background: #003d7a !important; }
+[data-testid="stDecoration"] { background: #003d7a !important; }
 </style>
 """, unsafe_allow_html=True)
 

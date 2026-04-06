@@ -232,7 +232,7 @@ st.markdown(f'''
       <p class="favv-sub">Royal Decree Tariffs 2026 · Port of Antwerp</p>
     </div>
   </div>
-  <img src="{_LOGO}" style="height:42px;filter:brightness(0) invert(1);opacity:0.92;">
+  <img src="{_LOGO}" style="height:42px;">
 </div>
 ''', unsafe_allow_html=True)
 
@@ -281,7 +281,7 @@ with left:
         if product_type_nl == "Vlees / Vis (veterinair)":
             c1, c2 = st.columns(2)
             with c1:
-                gewicht = st.number_input("Weight (kg)", min_value=0.0, value=15000.0, step=100.0)
+                gewicht = st.number_input("Weight (kg)", min_value=0.0, value=0.0, step=100.0)
                 invoer["Weight"] = f"{gewicht:,.0f} kg"
             with c2:
                 containers = st.number_input("Containers", min_value=1, value=1, step=1)
@@ -318,10 +318,10 @@ with left:
             "Plantaardige producten - Aardappelen",
             "Plantaardige producten - Granen (Cereals)",
         ]:
-            gewicht = st.number_input("Weight (kg)", min_value=0.0, value=15000.0, step=100.0)
+            gewicht = st.number_input("Weight (kg)", min_value=0.0, value=0.0, step=100.0)
             invoer["Weight"] = f"{gewicht:,.0f} kg"
         elif product_type_nl == "Plantaardige producten - Hout":
-            volume = st.number_input("Volume (m³)", min_value=0.0, value=50.0, step=1.0)
+            volume = st.number_input("Volume (m³)", min_value=0.0, value=0.0, step=1.0)
             invoer["Volume"] = f"{volume:,.1f} m³"
 
         if st.button("🧮 Calculate FAVV charge"):

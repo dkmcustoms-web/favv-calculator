@@ -66,28 +66,23 @@ def _nz_korting(bedrag: float, locatie: str) -> float:
     return bedrag
 
 
-def bereken_veterinair_vlees_vis(gewicht_kg: float, flow: str, locatie: str,
-                                  aantal_containers: int) -> dict:
+def bereken_veterinair_vlees_vis(gewicht_kg: float, flow: str, locatie: str) -> dict:
     t = TARIEVEN
     if flow == "Import":
         basis = max(gewicht_kg * t["vet_import_vlees_vis_per_kg"],
                     t["vet_import_vlees_vis_minimum"])
-        extra_containers = max(0, aantal_containers - 1) * t["vet_extra_container"]
-        totaal = basis + extra_containers
-        totaal = _nz_korting(totaal, locatie)
+        totaal = _nz_korting(basis, locatie)
         return {
-            "Basiskosten vlees/vis (per kg, min 117.32)": round(basis, 2),
-            "Extra containers": round(extra_containers, 2),
+            "Import cost meat/fish (per kg, min €117.32)": round(basis, 2),
             "TOTAAL": round(totaal, 2),
             "NZ korting toegepast": locatie == "Nieuw-Zeeland",
         }
-    else:  # Transit
+    else:  # Transit — NZ discount not applicable
         basis = gewicht_kg * t["vet_transit_vlees_vis_per_kg"]
-        totaal = _nz_korting(basis, locatie)
         return {
-            "Transitkosten vlees/vis (per kg)": round(basis, 2),
-            "TOTAAL": round(totaal, 2),
-            "NZ korting toegepast": locatie == "Nieuw-Zeeland",
+            "Transit cost meat/fish (per kg)": round(basis, 2),
+            "TOTAAL": round(basis, 2),
+            "NZ korting toegepast": False,
         }
 
 

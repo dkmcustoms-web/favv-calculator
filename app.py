@@ -274,20 +274,21 @@ with left:
             flow = st.selectbox("Flow", ["Import", "Transit"])
             invoer["Flow"] = flow
         with c2:
-            locatie_en = st.selectbox("Origin", LOCATIONS_EN)
+            # New Zealand discount only applies to Import, not Transit
+            if flow == "Import":
+                locatie_en = st.selectbox("Origin", LOCATIONS_EN)
+            else:
+                locatie_en = st.selectbox("Origin", ["Rest of the World"],
+                                          help="New Zealand discount not applicable for Transit")
             locatie_nl = LOCATIONS_MAP[locatie_en]
             invoer["Origin"] = locatie_en
 
         if product_type_nl == "Vlees / Vis (veterinair)":
-            c1, c2 = st.columns(2)
-            with c1:
-                gewicht = st.number_input("Weight (kg)", min_value=0.0, value=0.0, step=100.0)
-                invoer["Weight"] = f"{gewicht:,.0f} kg"
-            with c2:
-                containers = st.number_input("Containers", min_value=1, value=1, step=1)
-                invoer["Containers"] = int(containers)
+            # Meat/fish: charged per shipment (not per container)
+            gewicht = st.number_input("Weight (kg)", min_value=0.0, value=0.0, step=100.0)
+            invoer["Weight"] = f"{gewicht:,.0f} kg"
             if st.button("🧮 Calculate FAVV charge"):
-                calc_result = bereken_veterinair_vlees_vis(gewicht, flow, locatie_nl, int(containers))
+                calc_result = bereken_veterinair_vlees_vis(gewicht, flow, locatie_nl)
         else:
             c1, c2, c3 = st.columns(3)
             with c1:

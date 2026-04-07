@@ -60,11 +60,13 @@ def genereer_pdf(product_type: str, invoer: dict, resultaat: dict) -> bytes:
     story = []
 
     # ── HEADER ─────────────────────────────────────────────────────────────────
+    # Header table — avoid nested lists, use single Paragraphs per cell
     header_data = [[
         Paragraph("<b>FAVV</b>", S("Logo", fontSize=16, textColor=BLUE,
                                    fontName="Helvetica-Bold", alignment=TA_CENTER)),
-        [Paragraph("Retribution Report", title_style),
-         Paragraph("Royal Decree Tariffs 2026 · Port of Antwerp", sub_style)],
+        Paragraph(f"Retribution Report<br/><font size='9' color='#7eb8f7'>Royal Decree Tariffs 2026 · Port of Antwerp</font>",
+                  S("HM", fontSize=18, textColor=colors.white, fontName="Helvetica-Bold",
+                    alignment=TA_LEFT, leading=24)),
         Paragraph(f"DKM Customs<br/><font size='8'>{datum}</font>",
                   S("FR", fontSize=10, textColor=colors.white, fontName="Helvetica",
                     alignment=TA_RIGHT, leading=14)),
@@ -108,7 +110,7 @@ def genereer_pdf(product_type: str, invoer: dict, resultaat: dict) -> bytes:
                     row.append([Paragraph(k.upper(), label_style),
                                 Paragraph(str(v), value_style)])
                 else:
-                    row.append([""])
+                    row.append([Paragraph("", label_style)])
             rows.append(row)
         param_t = Table(rows, colWidths=[W / 2, W / 2])
         param_t.setStyle(TableStyle([
@@ -145,17 +147,26 @@ def genereer_pdf(product_type: str, invoer: dict, resultaat: dict) -> bytes:
     # ── COST BREAKDOWN ─────────────────────────────────────────────────────────
     story.append(Paragraph("COST BREAKDOWN", section_style))
 
-    bd_items = [(k, v) for k, v in resultaat.items()
-                if k not in ("TOTAAL", "NZ korting toegepast")]
+    # Filter only numeric line items
+    bd_items = [
+        (k, v) for k, v in resultaat.items()
+        if k not in ("TOTAAL", "NZ korting toegepast")
+        and isinstance(v, (int, float))
+    ]
 
-    bd_data = [["Description", "Amount"]]
+    hdr_s = S("HDR", fontSize=8, textColor=colors.white, fontName="Helvetica-Bold", leading=11)
+    bd_data = [[Paragraph("Description", hdr_s), Paragraph("Amount", hdr_s)]]
     for i, (k, v) in enumerate(bd_items):
+        try:
+            amount_str = f"€ {float(v):,.2f}"
+        except (TypeError, ValueError):
+            amount_str = str(v)
         bd_data.append([
-            Paragraph(k, S(f"BL{i}", fontSize=9, textColor=TEXT_DARK,
-                           fontName="Helvetica", leading=12)),
-            Paragraph(f"€ {v:,.2f}", S(f"BR{i}", fontSize=9, textColor=TEXT_DARK,
-                                        fontName="Helvetica-Bold",
-                                        alignment=TA_RIGHT, leading=12)),
+            Paragraph(str(k), S(f"BL{i}", fontSize=9, textColor=TEXT_DARK,
+                                fontName="Helvetica", leading=12)),
+            Paragraph(amount_str, S(f"BR{i}", fontSize=9, textColor=TEXT_DARK,
+                                    fontName="Helvetica-Bold",
+                                    alignment=TA_RIGHT, leading=12)),
         ])
     bd_data.append([
         Paragraph("<b>TOTAL</b>", S("BTL", fontSize=10, textColor=colors.white,
